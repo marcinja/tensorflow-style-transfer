@@ -4,6 +4,7 @@ import utils
 import vgg19
 import style_transfer
 import os
+import librosa
 
 import argparse
 
@@ -103,14 +104,16 @@ def main():
     vgg_net = vgg19.VGG19(model_file_path)
 
     # load content image and style image
-    content_image = utils.load_image(args.content, max_size=args.max_size)
-    style_image = utils.load_image(args.style, shape=(content_image.shape[1],content_image.shape[0]))
+#    content_image = utils.load_image(args.content, max_size=args.max_size)
+ #   style_image = utils.load_image(args.style, shape=(content_image.shape[1],content_image.shape[0]))
+
+    content, c_tf, style, style_tf = utils.load_audio(args.style, args.content)
 
     # initial guess for output
     if args.initial_type == 'content':
-        init_image = content_image
+        init_image = content
     elif args.initial_type == 'style':
-        init_image = style_image
+        init_image = style
     elif args.initial_type == 'random':
         init_image = np.random.normal(size=content_image.shape, scale=np.std(content_image))
 
@@ -136,8 +139,8 @@ def main():
                                       content_layer_ids = CONTENT_LAYERS,
                                       style_layer_ids = STYLE_LAYERS,
                                       init_image = add_one_dim(init_image),
-                                      content_image = add_one_dim(content_image),
-                                      style_image = add_one_dim(style_image),
+                                      content_image = add_one_dim(content),
+                                      style_image = add_one_dim(style),
                                       net = vgg_net,
                                       num_iter = args.num_iter,
                                       loss_ratio = args.loss_ratio,
@@ -153,8 +156,22 @@ def main():
     shape = result_image.shape
     result_image = np.reshape(result_image,shape[1:])
 
+    a = np.zeros_like(a_content)
+    a[:N_CHANNELS,:] = np.exp(result_image[0,0].T) - 1
+
+    # This code is supposed to do phase reconstruction
+    p = 2 * np.pi * np.random.random_sample(a.shape) - np.pi
+    for i in range(500):
+        S = a * np.exp(1j*p)
+        x = librosa.istft(S)
+        p = np.angle(librosa.stft(x, N_FFT))
+
+    OUTPUT_FILENAME = 'outputs/out.wav'
+    librosa.output.write_wav(OUTPUT_FILENAME, x, fs)
+
+
     # save result
-    utils.save_image(result_image,args.output)
+#    utils.save_image(result_image,args.output)
 
     # utils.plot_images(content_image,style_image, result_image)
 

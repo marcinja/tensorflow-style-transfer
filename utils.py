@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import PIL.Image
+import librosa
 
 """Helper-functions for image manipulation"""
 # This function loads an image and returns it as a numpy array of floating-points.
@@ -32,6 +33,35 @@ def load_image(filename, shape=None, max_size=None):
 
     # Convert to numpy floating-point array.
     return np.float32(image)
+
+# Fourier phases are ignored
+N_FFT = 2048
+def read_audio_spectum(filename):
+    x, fs = librosa.load(filename)
+    S = librosa.stft(x, N_FFT)
+    p = np.angle(S)
+    S = np.float32(np.log1p(np.abs(S[:,:430])))
+    return S, fs
+
+
+def load_audio(style_file, content_file):
+    a_content, fs = read_audio_spectum(content_file)
+    a_style, fs = read_audio_spectum(style_file)
+
+    N_SAMPLES = a_content.shape[1]
+    N_CHANNELS = a_content.shape[0]
+    a_style = a_style[:N_CHANNELS, :N_SAMPLES]
+
+    N_FILTERS = 4096
+
+    a_content_tf = np.ascontiguousarray(a_content.T[None,None,:,:])
+    a_style_tf = np.ascontiguousarray(a_style.T[None,None,:,:])
+
+
+    return a_content, a_content_tf, a_style, a_style_tf
+
+
+
 
 # Save an image as a jpeg-file.
 # The image is given as a numpy array with pixel-values between 0 and 255.

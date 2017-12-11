@@ -15,8 +15,11 @@ class StyleTransfer:
         self.STYLE_LAYERS = collections.OrderedDict(sorted(style_layer_ids.items()))
 
         # preprocess input images
-        self.p0 = np.float32(self.net.preprocess(content_image))
-        self.a0 = np.float32(self.net.preprocess(style_image))
+        #self.p0 = np.float32(self.net.preprocess(content_image))
+        self.p0 = np.float32(content_image)
+        #self.a0 = np.float32(self.net.preprocess(style_image))
+        self.a0 = np.float32(style_image)
+        #self.x0 = np.float32(self.net.preprocess(init_image))
         self.x0 = np.float32(self.net.preprocess(init_image))
 
         # parameters for optimization
